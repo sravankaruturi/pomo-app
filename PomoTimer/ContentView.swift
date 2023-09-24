@@ -9,29 +9,80 @@ import SwiftUI
 
 struct ContentView: View {
     
-    @State private var endTime: Date = Date(timeInterval: 1500, since: Date())
+    @State private var progressTime = 1500
+    @State private var timer: Timer?
+    @State private var isRunning = false
+    
+    var minutes: Int{
+        progressTime/60
+    }
+    
+    var seconds: Int{
+        progressTime % 60
+    }
+    
+    var progressBar: CGFloat{
+        CGFloat(progressTime)/1500
+    }
     
     private var formatter = DateComponentsFormatter()
     
     var body: some View {
-        VStack (spacing: 50) {
+
+        VStack{
+            
             Text("Time Left")
-                .font(.subheadline)
+                .font(.largeTitle)
+                .padding(50)
             
-            let currTime = Date()
-            let timeInt = currTime.distance(to: endTime)
+            ZStack{
+                
+                let minString = String(format: "%02d", minutes)
+                let secString = String(format: "%02d", seconds)
+                Text("\(minString):\(secString)")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                
+                Circle()
+                    .fill(Color.clear)
+                    .frame(width: 250, height: 250)
+                    .overlay(Circle().trim(from: 0.0, to: progressBar).stroke(style: StrokeStyle(
+                        lineWidth: 15,
+                        lineCap: .round,
+                        lineJoin: .round
+                    )).foregroundColor(.orange)
+                    )
+                
+            }
             
-            Text(formatter.string(from: timeInt)!)
-            
-            Button(action: ResetTimer, label: {Text("Reset Timer")})
-            
+            HStack(spacing: 10){
+                Button(action: StartTimer, label: {Text("Start Timer")})
+                Button(action: PauseTimer, label: {Text("Pause Timer")})
+            }
+            .padding()
+            .buttonStyle(.bordered)
         }
         .padding()
     }
     
-    func ResetTimer(){
-        endTime = Date(timeInterval: 1500, since: Date())
+    func StartTimer(){
+        progressTime = 1500
+        
+        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true, block: { _ in
+            progressTime -= 1
+        })
     }
+    
+    func PauseTimer(){
+        if isRunning{
+            timer?.invalidate()
+        }else{
+            timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true, block: { _ in
+                progressTime -= 1
+            })
+        }
+    }
+    
 }
 
 #Preview {
