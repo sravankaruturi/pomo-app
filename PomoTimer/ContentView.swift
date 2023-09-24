@@ -9,21 +9,9 @@ import SwiftUI
 
 struct ContentView: View {
     
-    @State private var progressTime = 1500
-    @State private var timer: Timer?
-    @State private var isRunning = false
+    @StateObject private var vm = ViewModel()
     
-    var minutes: Int{
-        progressTime/60
-    }
-    
-    var seconds: Int{
-        progressTime % 60
-    }
-    
-    var progressBar: CGFloat{
-        CGFloat(progressTime)/1500
-    }
+    private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     
     private var formatter = DateComponentsFormatter()
     
@@ -37,16 +25,30 @@ struct ContentView: View {
             
             ZStack{
                 
-                let minString = String(format: "%02d", minutes)
-                let secString = String(format: "%02d", seconds)
-                Text("\(minString):\(secString)")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
+                VStack{
+                    
+                    Text(vm.time)
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                        .alert("Timer Done!", isPresented: $vm.showingAlert){
+                            Button("Continue", role: .cancel){
+                                
+                            }
+                        }
+                    
+                    Slider(value: $vm.minutes, in: 1...25, step: 1)
+                        .padding()
+                        .frame(width: 200)
+                        .disabled(vm.isActive)
+                        .animation(.easeInOut, value: vm.minutes)
+                    
+                }
+                .padding()
                 
                 Circle()
                     .fill(Color.clear)
                     .frame(width: 250, height: 250)
-                    .overlay(Circle().trim(from: 0.0, to: progressBar).stroke(style: StrokeStyle(
+                    .overlay(Circle().trim(from: 0.0, to: CGFloat(vm.percentageDone)).stroke(style: StrokeStyle(
                         lineWidth: 15,
                         lineCap: .round,
                         lineJoin: .round
@@ -57,30 +59,26 @@ struct ContentView: View {
             
             HStack(spacing: 10){
                 Button(action: StartTimer, label: {Text("Start Timer")})
-                Button(action: PauseTimer, label: {Text("Pause Timer")})
+                    .disabled(vm.isActive)
+                
+                Button(action: ResetTimer, label: {Text("Reset Timer")})
+                    .tint(.red)
             }
             .padding()
             .buttonStyle(.bordered)
         }
         .padding()
-    }
-    
-    func StartTimer(){
-        progressTime = 1500
-        
-        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true, block: { _ in
-            progressTime -= 1
+        .onReceive(timer, perform: { _ in
+            vm.updateCountDown()
         })
     }
     
-    func PauseTimer(){
-        if isRunning{
-            timer?.invalidate()
-        }else{
-            timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true, block: { _ in
-                progressTime -= 1
-            })
-        }
+    func StartTimer(){
+        vm.start(minutes: vm.minutes)
+    }
+    
+    func ResetTimer(){
+        vm.reset()
     }
     
 }
